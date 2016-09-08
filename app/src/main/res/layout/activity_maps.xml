@@ -6,10 +6,45 @@
     android:layout_height="match_parent"
     tools:context="tomerbu.edu.locationdemos.MapsActivity" >
 
+
+
     <RelativeLayout
+        android:layout_margin="20dp"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1">
+
+        <EditText
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Street"
+            android:id="@+id/etStreet"/>
+
+        <EditText
+            android:layout_below="@+id/etStreet"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="City"
+            android:lines="1"
+            android:maxLines="1"
+            android:id="@+id/etCity"/>
+
+        <EditText
+            android:layout_below="@+id/etCity"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Country"
+            android:id="@+id/etCountry"/>
+
+        <Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="show On Map"
+            android:onClick="searchAddress"
+            android:layout_alignParentRight="true"
+            android:layout_below="@id/etCountry"/>
+
+
         <RadioGroup
             android:orientation="horizontal"
             android:layout_marginBottom="10dp"
