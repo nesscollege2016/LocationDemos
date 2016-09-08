@@ -8,7 +8,6 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
-import android.util.Log;
 import android.widget.RadioGroup;
 
 import com.google.android.gms.common.api.GoogleApiClient;
@@ -22,7 +21,10 @@ import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
 
-public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, GoogleApiClient.ConnectionCallbacks {
+public class MapsActivity extends FragmentActivity
+        implements OnMapReadyCallback,
+        GoogleApiClient.ConnectionCallbacks,
+        LocationListener{
 
     private static final int REQUEST_CODE_LOCATION = 10;
     private ProgressDialog dialog;
@@ -47,17 +49,18 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         initRadioGroup();
 
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
         initApiClient();
     }
 
-    private void initApiClient() {
-        GoogleApiClient.Builder builder = new GoogleApiClient.Builder(this);
-
-        builder.addApi(LocationServices.API).
-                addConnectionCallbacks(this);
-
-        mApiClient = builder.build();
-        mApiClient.connect();
+    @Override
+    protected void onStop() {
+        super.onStop();
+        LocationServices.FusedLocationApi.removeLocationUpdates(mApiClient, this);
     }
 
     private void initRadioGroup() {
@@ -113,11 +116,30 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(nessCollege, 17));
     }
 
-    @Override
-    public void onConnected(@Nullable Bundle bundle) {
-        Log.d("Ness", "Connected");
-        requestLocation();
+
+
+    //Init the Google api client, specifying LocationServices as the api
+    private void initApiClient() {
+        mApiClient =  new GoogleApiClient.
+                Builder(this).
+                addConnectionCallbacks(this).
+                addApi(LocationServices.API).build();
+        //Async:
+        mApiClient.connect();
+        //when connected?: onConnected
     }
+    @Override
+    public void onRequestPermissionsResult(int requestCode,
+                                           @NonNull String[] permissions,
+                                           @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        //If we got the permission:
+        if (grantResults[0] == PackageManager.PERMISSION_GRANTED
+                && requestCode==REQUEST_CODE_LOCATION){
+            requestLocation();
+        }
+    }
+
 
     private void requestLocation() {
         if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION)
@@ -135,43 +157,32 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         }
         //If we don't have permission, we don't get here
 
-        //Get the last known location. May be null.!!!
-        Location lastLocation = LocationServices.FusedLocationApi.getLastLocation(mApiClient);
+        LocationRequest request = LocationRequest.create();
+        request.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY).setInterval(1000);
 
-        mLocationRequest = LocationRequest.create();
-        mLocationRequest.setInterval(1000 * 10).
-                setFastestInterval(1000).
-                setMaxWaitTime(1000).
-                setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
-
-        LocationServices.FusedLocationApi.requestLocationUpdates(
-                mApiClient, mLocationRequest, new LocationListener() {
-                    @Override
-                    public void onLocationChanged(Location location) {
-                         LatLng loc = new LatLng(location.getLatitude(), location.getLongitude());
-                         map.addMarker(new MarkerOptions().position(loc));
-                         map.animateCamera(CameraUpdateFactory.newLatLngZoom(loc, 16));
-                    }
-                }
-        );
-
+        LocationServices.FusedLocationApi.requestLocationUpdates(mApiClient,
+                request,
+                this);
 
     }
 
     @Override
-    public void onRequestPermissionsResult(int requestCode,
-                                           @NonNull String[] permissions,
-                                           @NonNull int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        //If we got the permission:
-        if (grantResults[0] == PackageManager.PERMISSION_GRANTED
-                && requestCode==REQUEST_CODE_LOCATION){
-            requestLocation();
-        }
+    public void onConnected(@Nullable Bundle bundle) {
+        requestLocation();
     }
 
     @Override
     public void onConnectionSuspended(int i) {
 
+    }
+
+    @Override
+    public void onLocationChanged(Location location) {
+        double lat = location.getLatitude();
+        double longitude = location.getLongitude();
+
+        LatLng loc = new LatLng(lat, longitude);
+
+        map.animateCamera(CameraUpdateFactory.newLatLngZoom(loc, 17));
     }
 }
